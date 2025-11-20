@@ -1,67 +1,81 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Player from './Player';
 import ObstaclePair from './ObstaclePair';
-
-const GAME_WIDTH = 800;
-const GAME_HEIGHT = 500;
-const OBSTACLE_INTERVAL = 2000;
+import './Game.css';
 
 export default function Game() {
-  const [playerX, setPlayerX] = useState(100);
-  const [obstacles, setObstacles] = useState([]);
-  const [score, setScore] = useState(0);
-  const gameRef = useRef();
+  const [playerY, setPlayerY] = useState(200);
+  const [velocity, setVelocity] = useState(0);
+  const [obstacleX, setObstacleX] = useState(600);
+  const [gapTop, setGapTop] = useState(150);
+  const [gameOver, setGameOver] = useState(false);
 
-  // Handle horizontal movement
+  const gravity = 0.7;
+  const jumpStrength = -10;
+  const pipeSpeed = 3;
+  const pipeWidth = 50;
+
   useEffect(() => {
     const handleKeyDown = (e) => {
-      setPlayerX(prev => {
-        if (e.key === 'ArrowLeft') return Math.max(prev - 20, 0);
-        if (e.key === 'ArrowRight') return Math.min(prev + 20, GAME_WIDTH - 40);
-        return prev;
-      });
+      if (e.code === 'Space') {
+        setVelocity(jumpStrength);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Spawn obstacles
   useEffect(() => {
-    const interval = setInterval(() => {
-      const id = Date.now();
-      setObstacles(prev => [...prev, { id, x: GAME_WIDTH, passed: false }]);
-    }, OBSTACLE_INTERVAL);
-    return () => clearInterval(interval);
-  }, []);
+    if (gameOver) return;
 
-  // Move obstacles and check for scoring
-  useEffect(() => {
     const interval = setInterval(() => {
-      setObstacles(prev =>
-        prev
-          .map(ob => {
-            const newX = ob.x - 2;
-            const passed = !ob.passed && newX + 60 < playerX;
-            if (passed) setScore(s => s + 1);
-            return { ...ob, x: newX, passed: ob.passed || passed };
-          })
-          .filter(ob => ob.x + 60 > 0)
-      );
+      setVelocity((v) => v + gravity);
+      setPlayerY((y) => y + velocity);
+      setObstacleX((x) => {
+        if (x < -pipeWidth) {
+          setGapTop(Math.floor(Math.random() * 300) + 50);
+          return 600;
+        }
+        return x - pipeSpeed;
+      });
+
+      // Collision detection
+      const playerBox = { top: playerY, bottom: playerY + 30 };
+      const pipeBox = {
+        left: obstacleX,
+        right: obstacleX + pipeWidth,
+        gapTop,
+        gapBottom: gapTop + 150,
+      };
+
+      const withinX = pipeBox.left < 130 && pipeBox.right > 100;
+      const hitTop = playerBox.top < pipeBox.gapTop;
+      const hitBottom = playerBox.bottom > pipeBox.gapBottom;
+
+      if (withinX && (hitTop || hitBottom)) {
+        setGameOver(true);
+      }
+
+      if (playerY > window.innerHeight || playerY < 0) {
+        setGameOver(true);
+      }
     }, 20);
+
     return () => clearInterval(interval);
-  }, [playerX]);
+  }, [playerY, velocity, obstacleX, gapTop, gameOver]);
 
   return (
-    <div
-      className="game"
-      ref={gameRef}
-      style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}
-    >
-      <div className="score">Score: {score}</div>
-      <Player x={playerX} />
-      {obstacles.map(ob => (
-        <ObstaclePair key={ob.id} x={ob.x} />
-      ))}
+    <div style={{ position: 'relative', width: '100%', height: '100vh', backgroundColor: '#87CEEB' }}>
+      {!gameOver ? (
+        <>
+          <Player y={playerY} />
+          <ObstaclePair x={obstacleX} gapTop={gapTop} />
+        </>
+      ) : (
+        <h1 style={{ position: 'absolute', top: '40%', left: '40%', fontSize: '3rem', color: 'black' }}>
+          Game Over
+        </h1>
+      )}
     </div>
   );
 }
