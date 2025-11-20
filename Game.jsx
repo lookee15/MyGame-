@@ -9,9 +9,10 @@ export default function Game() {
   const [playerY, setPlayerY] = useState(window.innerHeight - groundHeight - playerSize);
   const [playerX, setPlayerX] = useState(100);
   const [velocity, setVelocity] = useState(0);
+
   const [obstacleX, setObstacleX] = useState(window.innerWidth);
-  const [obstacleHeight, setObstacleHeight] = useState(100);
-  const [obstacleY, setObstacleY] = useState(window.innerHeight - groundHeight - 100);
+  const [gapTop, setGapTop] = useState(150);
+
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [hasScored, setHasScored] = useState(false);
@@ -24,12 +25,12 @@ export default function Game() {
   const jumpStrength = -12;
   const pipeSpeed = 4;
   const pipeWidth = 50;
+  const gapHeight = 150;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space') {
         setVelocity(jumpStrength);
-        // Reset ground timer when jumping
         setGroundTime(0);
         setDangerCountdown(null);
       } else if (e.code === 'ArrowLeft') {
@@ -51,15 +52,14 @@ export default function Game() {
         Math.min(window.innerHeight - playerSize - groundHeight, y + velocity)
       );
 
-      // Track ground time
+      // Ground timer
       if (playerY >= window.innerHeight - playerSize - groundHeight) {
-        setGroundTime((t) => t + 0.02); // 20ms interval
+        setGroundTime((t) => t + 0.02);
       } else {
         setGroundTime(0);
         setDangerCountdown(null);
       }
 
-      // Danger logic for 10s
       if (groundTime >= 5 && groundTime < 10) {
         setDangerCountdown(Math.ceil(10 - groundTime));
       }
@@ -70,13 +70,7 @@ export default function Game() {
       // Obstacle movement
       setObstacleX((x) => {
         if (x < -pipeWidth) {
-          const height = Math.floor(Math.random() * 100) + 50;
-          const yPos = Math.random() < 0.5
-            ? Math.floor(Math.random() * (window.innerHeight - groundHeight - height - 100)) + 50
-            : window.innerHeight - groundHeight - height;
-
-          setObstacleHeight(height);
-          setObstacleY(yPos);
+          setGapTop(Math.floor(Math.random() * (window.innerHeight - groundHeight - gapHeight - 100)) + 50);
           setHasScored(false);
           return window.innerWidth;
         }
@@ -97,39 +91,60 @@ export default function Game() {
         right: playerX + playerSize,
       };
 
-      const obstacleBox = {
+      const topPipeBox = {
         left: obstacleX,
         right: obstacleX + pipeWidth,
-        top: obstacleY,
-        bottom: obstacleY + obstacleHeight,
+        top: 0,
+        bottom: gapTop,
       };
 
-      const overlapX = playerBox.right > obstacleBox.left && playerBox.left < obstacleBox.right;
-      const overlapY = playerBox.bottom > obstacleBox.top && playerBox.top < obstacleBox.bottom;
+      const bottomPipeBox = {
+        left: obstacleX,
+        right: obstacleX + pipeWidth,
+        top: gapTop + gapHeight,
+        bottom: window.innerHeight - groundHeight,
+      };
 
-      if (overlapX && overlapY) {
+      const overlapX = playerBox.right > topPipeBox.left && playerBox.left < topPipeBox.right;
+      const hitTop = playerBox.top < topPipeBox.bottom;
+      const hitBottom = playerBox.bottom > bottomPipeBox.top;
+
+      if (overlapX && (hitTop || hitBottom)) {
         setGameOver(true);
       }
     }, 20);
 
     return () => clearInterval(interval);
-  }, [playerY, velocity, obstacleX, obstacleHeight, obstacleY, playerX, hasScored, gameOver, groundTime]);
+  }, [playerY, velocity, obstacleX, gapTop, playerX, hasScored, gameOver, groundTime]);
 
   return (
     <div className="game-container">
       <div className="score">Score: {score}</div>
       {dangerCountdown && (
-        <div className="danger-countdown">Jump😥 {dangerCountdown}</div>
+        <div className="danger-countdown">Jump! {dangerCountdown}</div>
       )}
       {!gameOver ? (
         <>
           <Player y={playerY} x={playerX} />
+          {
+          /* Top pipe */
+          }
           <div
-            className="pipe"
+            className="pipe pipe-top"
             style={{
               left: `${obstacleX}px`,
-              top: `${obstacleY}px`,
-              height: `${obstacleHeight}px`,
+              height: `${gapTop}px`,
+            }}
+          />
+          {
+          /* Bottom pipe */
+          }
+          <div
+            className="pipe pipe-bottom"
+            style={{
+              left: `${obstacleX}px`,
+              top: `${gapTop + gapHeight}px`,
+              height: `${window.innerHeight - groundHeight - (gapTop + gapHeight)}px`,
             }}
           />
         </>
