@@ -7,8 +7,9 @@ export default function Game() {
   const [playerX, setPlayerX] = useState(100);
   const [velocity, setVelocity] = useState(0);
   const [obstacleX, setObstacleX] = useState(window.innerWidth);
-  const [obstacleFromTop, setObstacleFromTop] = useState(true);
   const [obstacleHeight, setObstacleHeight] = useState(100);
+  const [obstacleY, setObstacleY] = useState(window.innerHeight - 30 - 100); // default ground
+  const [isFloating, setIsFloating] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [hasScored, setHasScored] = useState(false);
@@ -18,6 +19,7 @@ export default function Game() {
   const pipeSpeed = 4;
   const pipeWidth = 50;
   const playerSize = 30;
+  const groundHeight = 30;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -38,12 +40,21 @@ export default function Game() {
 
     const interval = setInterval(() => {
       setVelocity((v) => v + gravity);
-      setPlayerY((y) => Math.min(window.innerHeight - playerSize, y + velocity));
+      setPlayerY((y) =>
+        Math.min(window.innerHeight - playerSize - groundHeight, y + velocity)
+      );
 
       setObstacleX((x) => {
         if (x < -pipeWidth) {
-          setObstacleHeight(Math.floor(Math.random() * 200) + 50);
-          setObstacleFromTop(Math.random() < 0.5);
+          const isFloat = Math.random() < 0.5;
+          const height = Math.floor(Math.random() * 100) + 50;
+          const yPos = isFloat
+            ? Math.floor(Math.random() * (window.innerHeight - groundHeight - height - 100)) + 50
+            : window.innerHeight - groundHeight - height;
+
+          setObstacleHeight(height);
+          setObstacleY(yPos);
+          setIsFloating(isFloat);
           setHasScored(false);
           return window.innerWidth;
         }
@@ -56,6 +67,7 @@ export default function Game() {
         return x - pipeSpeed;
       });
 
+      // Collision detection
       const playerBox = {
         top: playerY,
         bottom: playerY + playerSize,
@@ -66,8 +78,8 @@ export default function Game() {
       const obstacleBox = {
         left: obstacleX,
         right: obstacleX + pipeWidth,
-        top: obstacleFromTop ? 0 : window.innerHeight - obstacleHeight,
-        bottom: obstacleFromTop ? obstacleHeight : window.innerHeight,
+        top: obstacleY,
+        bottom: obstacleY + obstacleHeight,
       };
 
       const overlapX = playerBox.right > obstacleBox.left && playerBox.left < obstacleBox.right;
@@ -79,7 +91,7 @@ export default function Game() {
     }, 20);
 
     return () => clearInterval(interval);
-  }, [playerY, velocity, obstacleX, obstacleHeight, obstacleFromTop, playerX, hasScored, gameOver]);
+  }, [playerY, velocity, obstacleX, obstacleHeight, obstacleY, playerX, hasScored, gameOver]);
 
   return (
     <div className="game-container">
@@ -91,9 +103,8 @@ export default function Game() {
             className="pipe"
             style={{
               left: `${obstacleX}px`,
+              top: `${obstacleY}px`,
               height: `${obstacleHeight}px`,
-              top: obstacleFromTop ? '0px' : 'auto',
-              bottom: obstacleFromTop ? 'auto' : '0px',
             }}
           />
         </>
