@@ -1,45 +1,72 @@
-.game {
+.game-container {
   position: relative;
-  background-color: skyblue;
+  width: 100%;
+  height: 100vh;
+  background-color: #87CEEB;
   overflow: hidden;
-  border: 2px solid #333;
 }
 
-.player {
+.ground {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  background-color: red;
-}
-
-.obstacle-pair {
-  position: absolute;
-  width: 60px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   bottom: 0;
+  width: 100%;
+  height: 30px;
+  background-color: green;
+  z-index: 1;
 }
 
 .pipe {
-  width: 100%;
+  position: absolute;
+  width: 50px;
   background-color: green;
+  z-index: 2;
+}
+.danger-countdown {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2rem;
+  color: rgb(255, 51, 0);
+  font-weight: bold;
+  z-index: 3;
 }
 
-.pipe.top {
-  border-bottom: 4px solid darkgreen;
-}
-
-.pipe.bottom {
-  border-top: 4px solid darkgreen;
+.game-over {
+  position: absolute;
+  top: 40%;
+  left: 35%;
+  font-size: 3rem;
+  color: black;
+  z-index: 3;
 }
 
 .score {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 24px;
-  font-weight: bold;
+  top: 20px;
+  left: 20px;
+  font-size: 2rem;
   color: white;
-  text-shadow: 1px 1px 2px black;
+  font-weight: bold;
+  z-index: 3;
+}
+
+.restart-button {
+  position: absolute;
+  top: 55%;
+  left: 42%;
+  padding: 12px 24px;
+  font-size: 1.2rem;
+  background-color: #ff4c4c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+  z-index: 3;
+}
+
+.restart-button:hover {
+  background-color: #e03c3c;
 }
