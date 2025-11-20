@@ -1,24 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import Player from './Player';
-import ObstaclePair from './ObstaclePair';
 import './Game.css';
 
 export default function Game() {
-  const [playerY, setPlayerY] = useState(200);
+  const [playerY, setPlayerY] = useState(window.innerHeight - 60);
+  const [playerX, setPlayerX] = useState(100);
   const [velocity, setVelocity] = useState(0);
-  const [obstacleX, setObstacleX] = useState(600);
-  const [gapTop, setGapTop] = useState(150);
+  const [obstacleX, setObstacleX] = useState(window.innerWidth);
+  const [obstacleFromTop, setObstacleFromTop] = useState(true);
+  const [obstacleHeight, setObstacleHeight] = useState(100);
   const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0);
+  const [hasScored, setHasScored] = useState(false);
 
   const gravity = 0.7;
-  const jumpStrength = -10;
-  const pipeSpeed = 3;
+  const jumpStrength = -12;
+  const pipeSpeed = 4;
   const pipeWidth = 50;
+  const playerSize = 30;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space') {
         setVelocity(jumpStrength);
+      } else if (e.code === 'ArrowLeft') {
+        setPlayerX((x) => Math.max(0, x - 20));
+      } else if (e.code === 'ArrowRight') {
+        setPlayerX((x) => Math.min(window.innerWidth - playerSize, x + 20));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -30,52 +38,74 @@ export default function Game() {
 
     const interval = setInterval(() => {
       setVelocity((v) => v + gravity);
-      setPlayerY((y) => y + velocity);
+      setPlayerY((y) => Math.min(window.innerHeight - playerSize, y + velocity));
+
       setObstacleX((x) => {
         if (x < -pipeWidth) {
-          setGapTop(Math.floor(Math.random() * 300) + 50);
-          return 600;
+          setObstacleHeight(Math.floor(Math.random() * 200) + 50);
+          setObstacleFromTop(Math.random() < 0.5);
+          setHasScored(false);
+          return window.innerWidth;
         }
+
+        if (!hasScored && x + pipeWidth < playerX) {
+          setScore((prev) => prev + 1);
+          setHasScored(true);
+        }
+
         return x - pipeSpeed;
       });
 
-      // Collision detection
-      const playerBox = { top: playerY, bottom: playerY + 30 };
-      const pipeBox = {
-        left: obstacleX,
-        right: obstacleX + pipeWidth,
-        gapTop,
-        gapBottom: gapTop + 150,
+      const playerBox = {
+        top: playerY,
+        bottom: playerY + playerSize,
+        left: playerX,
+        right: playerX + playerSize,
       };
 
-      const withinX = pipeBox.left < 130 && pipeBox.right > 100;
-      const hitTop = playerBox.top < pipeBox.gapTop;
-      const hitBottom = playerBox.bottom > pipeBox.gapBottom;
+      const obstacleBox = {
+        left: obstacleX,
+        right: obstacleX + pipeWidth,
+        top: obstacleFromTop ? 0 : window.innerHeight - obstacleHeight,
+        bottom: obstacleFromTop ? obstacleHeight : window.innerHeight,
+      };
 
-      if (withinX && (hitTop || hitBottom)) {
-        setGameOver(true);
-      }
+      const overlapX = playerBox.right > obstacleBox.left && playerBox.left < obstacleBox.right;
+      const overlapY = playerBox.bottom > obstacleBox.top && playerBox.top < obstacleBox.bottom;
 
-      if (playerY > window.innerHeight || playerY < 0) {
+      if (overlapX && overlapY) {
         setGameOver(true);
       }
     }, 20);
 
     return () => clearInterval(interval);
-  }, [playerY, velocity, obstacleX, gapTop, gameOver]);
+  }, [playerY, velocity, obstacleX, obstacleHeight, obstacleFromTop, playerX, hasScored, gameOver]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh', backgroundColor: '#87CEEB' }}>
+    <div className="game-container">
+      <div className="score">Score: {score}</div>
       {!gameOver ? (
         <>
-          <Player y={playerY} />
-          <ObstaclePair x={obstacleX} gapTop={gapTop} />
+          <Player y={playerY} x={playerX} />
+          <div
+            className="pipe"
+            style={{
+              left: `${obstacleX}px`,
+              height: `${obstacleHeight}px`,
+              top: obstacleFromTop ? '0px' : 'auto',
+              bottom: obstacleFromTop ? 'auto' : '0px',
+            }}
+          />
         </>
       ) : (
-        <h1 style={{ position: 'absolute', top: '40%', left: '40%', fontSize: '3rem', color: 'black' }}>
-          Game Over
-        </h1>
+        <>
+          <div className="game-over">Game Over</div>
+          <button className="restart-button" onClick={() => window.location.reload()}>
+            Restart
+          </button>
+        </>
       )}
+      <div className="ground"></div>
     </div>
   );
 }
