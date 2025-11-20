@@ -1,0 +1,45 @@
+.game {
+  position: relative;
+  background-color: skyblue;
+  overflow: hidden;
+  border: 2px solid #333;
+}
+
+.player {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background-color: red;
+}
+
+.obstacle-pair {
+  position: absolute;
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  bottom: 0;
+}
+
+.pipe {
+  width: 100%;
+  background-color: green;
+}
+
+.pipe.top {
+  border-bottom: 4px solid darkgreen;
+}
+
+.pipe.bottom {
+  border-top: 4px solid darkgreen;
+}
+
+.score {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px black;
+}
