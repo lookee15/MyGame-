@@ -3,28 +3,35 @@ import Player from './Player';
 import './Game.css';
 
 export default function Game() {
-  const [playerY, setPlayerY] = useState(window.innerHeight - 60);
+  const groundHeight = 30;
+  const playerSize = 30;
+
+  const [playerY, setPlayerY] = useState(window.innerHeight - groundHeight - playerSize);
   const [playerX, setPlayerX] = useState(100);
   const [velocity, setVelocity] = useState(0);
   const [obstacleX, setObstacleX] = useState(window.innerWidth);
   const [obstacleHeight, setObstacleHeight] = useState(100);
-  const [obstacleY, setObstacleY] = useState(window.innerHeight - 30 - 100); // default ground
-  const [isFloating, setIsFloating] = useState(false);
+  const [obstacleY, setObstacleY] = useState(window.innerHeight - groundHeight - 100);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [hasScored, setHasScored] = useState(false);
+
+  // Ground timer
+  const [groundTime, setGroundTime] = useState(0);
+  const [dangerCountdown, setDangerCountdown] = useState(null);
 
   const gravity = 0.7;
   const jumpStrength = -12;
   const pipeSpeed = 4;
   const pipeWidth = 50;
-  const playerSize = 30;
-  const groundHeight = 30;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space') {
         setVelocity(jumpStrength);
+        // Reset ground timer when jumping
+        setGroundTime(0);
+        setDangerCountdown(null);
       } else if (e.code === 'ArrowLeft') {
         setPlayerX((x) => Math.max(0, x - 20));
       } else if (e.code === 'ArrowRight') {
@@ -44,17 +51,32 @@ export default function Game() {
         Math.min(window.innerHeight - playerSize - groundHeight, y + velocity)
       );
 
+      // Track ground time
+      if (playerY >= window.innerHeight - playerSize - groundHeight) {
+        setGroundTime((t) => t + 0.02); // 20ms interval
+      } else {
+        setGroundTime(0);
+        setDangerCountdown(null);
+      }
+
+      // Danger logic for 10s
+      if (groundTime >= 5 && groundTime < 10) {
+        setDangerCountdown(Math.ceil(10 - groundTime));
+      }
+      if (groundTime >= 10) {
+        setGameOver(true);
+      }
+
+      // Obstacle movement
       setObstacleX((x) => {
         if (x < -pipeWidth) {
-          const isFloat = Math.random() < 0.5;
           const height = Math.floor(Math.random() * 100) + 50;
-          const yPos = isFloat
+          const yPos = Math.random() < 0.5
             ? Math.floor(Math.random() * (window.innerHeight - groundHeight - height - 100)) + 50
             : window.innerHeight - groundHeight - height;
 
           setObstacleHeight(height);
           setObstacleY(yPos);
-          setIsFloating(isFloat);
           setHasScored(false);
           return window.innerWidth;
         }
@@ -91,11 +113,14 @@ export default function Game() {
     }, 20);
 
     return () => clearInterval(interval);
-  }, [playerY, velocity, obstacleX, obstacleHeight, obstacleY, playerX, hasScored, gameOver]);
+  }, [playerY, velocity, obstacleX, obstacleHeight, obstacleY, playerX, hasScored, gameOver, groundTime]);
 
   return (
     <div className="game-container">
       <div className="score">Score: {score}</div>
+      {dangerCountdown && (
+        <div className="danger-countdown">Jump😥 {dangerCountdown}</div>
+      )}
       {!gameOver ? (
         <>
           <Player y={playerY} x={playerX} />
@@ -116,7 +141,12 @@ export default function Game() {
           </button>
         </>
       )}
-      <div className="ground"></div>
+      <div
+        className="ground"
+        style={{
+          backgroundColor: groundTime >= 5 ? 'red' : 'green',
+        }}
+      ></div>
     </div>
   );
 }
